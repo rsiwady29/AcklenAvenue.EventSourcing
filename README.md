@@ -28,6 +28,78 @@ public class WireUpEventStore : IBootstrapperTask
     }
 ```
 
+## A Sample Aggregate Root
+
+```
+public class Decepticon : AggregateRoot
+    {
+        public Decepticon(IEnumerable<object> events) : base(events)
+        {
+        }
+
+        public Decepticon(Guid id, string name):base(new List<object>())
+        {
+            When(NewEvent(new DecepticonCreated(id, name)));
+        }
+
+        public string Name { get; private set; }
+        public string[] Food { get; private set; }
+        public EpicBattle CurrentBattle { get; private set; }
+        public string[] Wounds { get; private set; }
+        public Guid Id { get; private set; }
+
+        void When(DecepticonCreated @event)
+        {
+            Id = @event.Id;
+            Name = @event.Name;
+        }
+
+        public void Kill(Autobot autobot)
+        {
+            When(NewEvent(new DecepticonKilledAutobot(autobot)));
+        }
+
+        void When(DecepticonKilledAutobot @event)
+        {
+            @event.Autobot.Die();
+        }
+
+        public void Eat(string food)
+        {
+            When(NewEvent(new DecepticonAte(food)));
+        }
+
+        void When(DecepticonAte @event)
+        {
+            List<string> list = (Food ?? new string[0]).ToList();
+            list.Add(@event.Food);
+            Food = list.ToArray();
+        }
+
+        public void EnterBattleWithAutobot(Autobot autobot)
+        {
+            When(NewEvent(new DecepticonEnteredBattleWithAutobot(autobot)));
+        }
+
+        void When(DecepticonEnteredBattleWithAutobot @event)
+        {
+            CurrentBattle = new EpicBattle(this, @event.Autobot);
+        }
+
+        public void Wound(string location)
+        {
+            When(NewEvent(new DecepticonWasWounded(location)));
+        }
+
+        void When(DecepticonWasWounded @event)
+        {
+            List<string> list = (Wounds ?? new string[0]).ToList();
+            list.Add(@event.Location);
+            Wounds = list.ToArray();
+        }
+    }
+```
+
 ## Use the EventStore in your Repository:
 
 ```

@@ -98,6 +98,38 @@ public class Decepticon : AggregateRoot
             Wounds = list.ToArray();
         }
     }
+    
+    public class EpicBattle
+    {
+        public Decepticon Decepticon { get; private set; }
+        public Autobot Autobot { get; private set; }
+
+        public EpicBattle(Decepticon decepticon, Autobot autobot)
+        {
+            Decepticon = decepticon;
+            Autobot = autobot;
+        }
+    }
+    
+    public class Autobot
+    {
+        public Autobot(Guid id, string name)
+        {
+            Id = id;
+            Name = name;
+            Spark = true;
+        }
+
+        public string Name { get; private set; }
+        public bool Spark { get; private set; }
+        public int LaserIntensity { get; private set; }
+        public Guid Id { get; private set; }
+
+        public void Die()
+        {
+            Spark = false;
+        }
+    }
 ```
 
 ## Use the EventStore in your Repository:

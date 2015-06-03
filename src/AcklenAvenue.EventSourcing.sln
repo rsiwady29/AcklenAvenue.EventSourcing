@@ -11,6 +11,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AcklenAvenue.EventSourcing.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AcklenAvenue.EventSourcing.MySql.Specs.Integration", "AcklenAvenue.EventSourcing.MySql.Specs.Integration\AcklenAvenue.EventSourcing.MySql.Specs.Integration.csproj", "{287A7DD6-EB72-481C-BADE-8132FB75647C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AcklenAvenue.EventSourcing.Postgres", "AcklenAvenue.EventSourcing.Postgres\AcklenAvenue.EventSourcing.Postgres.csproj", "{5B0AA5BD-EDAB-4EDB-9B77-5D1339B07319}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AcklenAvenue.EventSourcing.Postgres.Specs.Integration", "AcklenAvenue.EventSourcing.Postgres.Specs.Integration\AcklenAvenue.EventSourcing.Postgres.Specs.Integration.csproj", "{BB952C77-0DFB-4749-B1B0-298DF48F72DD}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +37,14 @@ Global
 		{287A7DD6-EB72-481C-BADE-8132FB75647C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{287A7DD6-EB72-481C-BADE-8132FB75647C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{287A7DD6-EB72-481C-BADE-8132FB75647C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5B0AA5BD-EDAB-4EDB-9B77-5D1339B07319}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5B0AA5BD-EDAB-4EDB-9B77-5D1339B07319}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5B0AA5BD-EDAB-4EDB-9B77-5D1339B07319}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5B0AA5BD-EDAB-4EDB-9B77-5D1339B07319}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BB952C77-0DFB-4749-B1B0-298DF48F72DD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BB952C77-0DFB-4749-B1B0-298DF48F72DD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BB952C77-0DFB-4749-B1B0-298DF48F72DD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BB952C77-0DFB-4749-B1B0-298DF48F72DD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

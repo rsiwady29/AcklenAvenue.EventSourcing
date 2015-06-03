@@ -9,38 +9,52 @@ using Newtonsoft.Json;
 using Npgsql;
 
 namespace AcklenAvenue.EventSourcing.Postgres
-{
+{    
     public class PostgresEventStore : IEventStore
     {
         readonly string _connectionString;
         readonly string _tableName;
+        readonly JsonEventConverter _jsonEventConverter;
 
         public PostgresEventStore(string connectionString, string tableName)
         {
             _connectionString = connectionString;
             _tableName = tableName;
+            _jsonEventConverter = new JsonEventConverter();
         }
 
-        public async Task<IEnumerable<object>> GetStream(Guid aggregateId)
+        public async Task<IEnumerable<object>> GetStream(Guid aggregateId = default(Guid))
         {
             using (var connection = new NpgsqlConnection(_connectionString))
             {
                 NpgsqlCommand command = connection.CreateCommand();
-                command.CommandText = string.Format("SELECT * FROM \"{0}\" WHERE \"aggregateId\" = '{1}' ORDER BY date",
-                    _tableName, aggregateId);
+                
+                var where = aggregateId == default(Guid)
+                    ? ""
+                    : string.Format("WHERE \"aggregateId\" = '{0}'", aggregateId);
+
+                command.CommandText = string.Format("SELECT * FROM \"{0}\" {1} ORDER BY date",
+                    _tableName, where);
                 var adapter = new NpgsqlDataAdapter {SelectCommand = command};
                 await connection.OpenAsync();
 
-                var dataSet = new DataSet();
-                adapter.Fill(dataSet);
-
-                var jsonEvents = dataSet.Tables[0].Rows.Cast<DataRow>().Select(GetJsonEvent).ToList();
-                
-                List<object> list = jsonEvents.Select(GetEvent).ToList();
+                var list = ConvertDatasetToListOfEvents(adapter);
 
                 connection.Close();
+
                 return list;
             }
+        }
+
+        public List<object> ConvertDatasetToListOfEvents(NpgsqlDataAdapter adapter)
+        {
+            var dataSet = new DataSet();
+            adapter.Fill(dataSet);
+
+            var jsonEvents = dataSet.Tables[0].Rows.Cast<DataRow>().Select(GetJsonEvent).ToList();
+
+            List<object> list = jsonEvents.Select(_jsonEventConverter.GetEvent).ToList();
+            return list;
         }
 
         public async void Persist(Guid aggregateId, object @event)
@@ -74,34 +88,6 @@ namespace AcklenAvenue.EventSourcing.Postgres
             string json = row["data"].ToString();
             string type = row["type"].ToString();
             return new JsonEvent(type, json, dateTime);
-        }
-
-        static object GetEvent(JsonEvent jsonEvent)
-        {
-            Type type = AppDomain.CurrentDomain.GetAssemblies()
-                .SelectMany(x => x.GetTypes())
-                .FirstOrDefault(x => x.FullName.EndsWith(jsonEvent.Type));
-
-            var objectThatWasDeserialized =
-                JsonConvert.DeserializeObject<Dictionary<string, object>>(jsonEvent.Json);
-            ConstructorInfo constructorInfo = type.GetConstructors()[0];
-            ParameterInfo[] parameterInfos = constructorInfo.GetParameters();
-            object[] paramValues = parameterInfos.Select(x =>
-                                                         {
-                                                             KeyValuePair<string, object> item =
-                                                                 objectThatWasDeserialized.FirstOrDefault(
-                                                                     y => y.Key.ToLower() == x.Name.ToLower());
-
-                                                             TypeConverter typeConverter =
-                                                                 TypeDescriptor.GetConverter(x.ParameterType);
-                                                             object fromString =
-                                                                 typeConverter.ConvertFromString(
-                                                                     item.Value.ToString());
-                                                             return fromString;
-                                                         }).ToArray();
-
-            object instance = constructorInfo.Invoke(paramValues);
-            return instance;
         }
 
         string GetInsertCommandText(Guid aggregateId, object @event)

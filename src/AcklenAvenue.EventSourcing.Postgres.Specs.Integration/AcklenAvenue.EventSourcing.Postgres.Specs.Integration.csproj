@@ -52,10 +52,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Gender.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TestAggregate.cs" />
     <Compile Include="TestAggregateCreated.cs" />
     <Compile Include="when_getting_an_event_stream_from_the_database.cs" />
+    <Compile Include="when_getting_an_event_stream_from_the_database_with_custom_conversions.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

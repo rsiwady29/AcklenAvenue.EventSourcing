@@ -8,7 +8,7 @@ using Machine.Specifications;
 
 namespace AcklenAvenue.EventSourcing.Postgres.Specs.Integration
 {
-    public class when_getting_an_event_stream_from_the_database
+    public class when_getting_an_event_stream_from_the_database_with_custom_conversions
     {
         static IEventStore _eventStore;
         static Guid _id;
@@ -20,8 +20,10 @@ namespace AcklenAvenue.EventSourcing.Postgres.Specs.Integration
                 _eventStore = new PostgresEventStore("Server=127.0.0.1;Port=5432;User Id=postgres;Password=00010011;Database=identity;", "aggregateEvents");
 
                 _id = Guid.NewGuid();
-                var aggregate = new TestAggregate(_id, "test", new Gender("female"));
+                var aggregate = new TestAggregate(_id, "test", new Gender("male"));
                 _eventStore.Persist(_id, aggregate.Changes.First());
+
+                JsonEventConverter.CustomConversions.Add(typeof(Gender), o => new Gender(o.ToString()));
             };
 
         Because of =

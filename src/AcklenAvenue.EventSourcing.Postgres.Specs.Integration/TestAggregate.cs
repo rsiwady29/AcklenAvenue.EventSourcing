@@ -1,15 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
+using AcklenAvenue.EventSourcing.MySql.Specs.Integration;
 
-namespace AcklenAvenue.EventSourcing.MySql.Specs.Integration
+namespace AcklenAvenue.EventSourcing.Postgres.Specs.Integration
 {
     public class TestAggregate : AggregateRoot
     {
         public Guid Id { get; private set; }
         public string Name { get; private set; }
+        public Gender Gender { get; private set; }
 
-        public TestAggregate(Guid id, string name):base(new List<object>())
+        public TestAggregate(Guid id, string name, Gender gender):base(new List<object>())
         {
+            Gender = gender;
             When(NewEvent(new TestAggregateCreated(id, name)));
         }
 

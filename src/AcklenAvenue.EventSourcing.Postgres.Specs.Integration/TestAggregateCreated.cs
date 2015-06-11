@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace AcklenAvenue.EventSourcing.MySql.Specs.Integration
+namespace AcklenAvenue.EventSourcing.Postgres.Specs.Integration
 {
     public class TestAggregateCreated
     {

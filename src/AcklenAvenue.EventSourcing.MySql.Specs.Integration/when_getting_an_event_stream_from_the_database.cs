@@ -9,14 +9,14 @@ namespace AcklenAvenue.EventSourcing.MySql.Specs.Integration
 {
     public class when_getting_an_event_stream_from_the_database
     {
-        static IEventStore _eventStore;
+        static IEventStore<Guid> _eventStore;
         static Guid _id;
         static Task<IEnumerable<object>> _result;
 
         Establish context =
             () =>
             {
-                _eventStore = new MySqlEventStore("Data Source=localhost; port=3306; Initial Catalog=rewardle.identity; uid=root; pwd=00010011;", "decepticonevents");
+                _eventStore = new MySqlEventStore<Guid>("Data Source=localhost; port=3306; Initial Catalog=rewardle.identity; uid=root; pwd=00010011;", "decepticonevents");
 
                 _id = Guid.NewGuid();
                 var aggregate = new TestAggregate(_id, "test");

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using AcklenAvenue.EventSourcing.MySql.Specs.Integration;
 
 namespace AcklenAvenue.EventSourcing.Postgres.Specs.Integration
 {

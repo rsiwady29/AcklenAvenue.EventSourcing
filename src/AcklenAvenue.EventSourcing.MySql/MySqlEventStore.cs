@@ -10,7 +10,7 @@ using Newtonsoft.Json;
 
 namespace AcklenAvenue.EventSourcing.MySql
 {
-    public class MySqlEventStore : IEventStore
+    public class MySqlEventStore<TId> : IEventStore<TId>
     {
         readonly string _connectionString;
         readonly string _tableName;
@@ -21,7 +21,7 @@ namespace AcklenAvenue.EventSourcing.MySql
             _tableName = tableName;
         }
 
-        public async Task<IEnumerable<object>> GetStream(Guid aggregateId)
+        public async Task<IEnumerable<object>> GetStream(TId aggregateId)
         {
             using (var mySqlConnection = new MySqlConnection(_connectionString))
             {
@@ -78,7 +78,7 @@ namespace AcklenAvenue.EventSourcing.MySql
             }
         }
 
-        public async void Persist(Guid aggregateId, object @event)
+        public async void Persist(TId aggregateId, object @event)
         {
             using (var mySqlConnection = new MySqlConnection(_connectionString))
             {

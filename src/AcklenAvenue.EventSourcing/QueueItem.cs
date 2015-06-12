@@ -2,16 +2,16 @@
 
 namespace AcklenAvenue.EventSourcing
 {
-    public class QueueItem
+    public class QueueItem<TId>
     {
-        public QueueItem(Guid aggregateId, object @event, DateTime time)
+        public QueueItem(TId aggregateId, object @event, DateTime time)
         {
             AggregateId = aggregateId;
             Event = @event;
             Time = time;
         }
 
-        public Guid AggregateId { get; set; }
+        public TId AggregateId { get; set; }
         public object Event { get; set; }
         public DateTime Time { get; set; }
     }

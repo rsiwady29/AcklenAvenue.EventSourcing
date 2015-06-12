@@ -10,7 +10,7 @@ using Npgsql;
 
 namespace AcklenAvenue.EventSourcing.Postgres
 {    
-    public class PostgresEventStore : IEventStore
+    public class PostgresEventStore<TId> : IEventStore<TId>
     {
         readonly string _connectionString;
         readonly string _tableName;
@@ -23,22 +23,26 @@ namespace AcklenAvenue.EventSourcing.Postgres
             _jsonEventConverter = new JsonEventConverter();
         }
 
-        public async Task<IEnumerable<object>> GetStream(Guid aggregateId = default(Guid))
+        public async Task<IEnumerable<object>> GetStream(TId aggregateId = default(TId))
         {
             using (var connection = new NpgsqlConnection(_connectionString))
             {
-                NpgsqlCommand command = connection.CreateCommand();
-                
-                var where = aggregateId == default(Guid)
-                    ? ""
-                    : string.Format("WHERE \"aggregateId\" = '{0}'", aggregateId);
+                List<object> list;
+                using (NpgsqlCommand command = connection.CreateCommand())
+                {
+                    var where = Equals(aggregateId, default(TId))
+                                    ? ""
+                                    : string.Format("WHERE \"aggregateId\" = '{0}'", aggregateId);
 
-                command.CommandText = string.Format("SELECT * FROM \"{0}\" {1} ORDER BY date",
-                    _tableName, where);
-                var adapter = new NpgsqlDataAdapter {SelectCommand = command};
-                await connection.OpenAsync();
+                    command.CommandText = string.Format("SELECT * FROM \"{0}\" {1} ORDER BY date",
+                        _tableName, @where);
+                    using (var adapter = new NpgsqlDataAdapter { SelectCommand = command })
+                    {
+                        await connection.OpenAsync();
 
-                var list = ConvertDatasetToListOfEvents(adapter);
+                        list = ConvertDatasetToListOfEvents(adapter);
+                    }
+                }
 
                 connection.Close();
 
@@ -48,36 +52,40 @@ namespace AcklenAvenue.EventSourcing.Postgres
 
         public List<object> ConvertDatasetToListOfEvents(NpgsqlDataAdapter adapter)
         {
-            var dataSet = new DataSet();
-            adapter.Fill(dataSet);
+            List<JsonEvent> jsonEvents;
+            using (var dataSet = new DataSet())
+            {
+                adapter.Fill(dataSet);
 
-            var jsonEvents = dataSet.Tables[0].Rows.Cast<DataRow>().Select(GetJsonEvent).ToList();
+                jsonEvents = dataSet.Tables[0].Rows.Cast<DataRow>().Select(GetJsonEvent).ToList();
+            }
 
             List<object> list = jsonEvents.Select(_jsonEventConverter.GetEvent).ToList();
             return list;
         }
 
-        public async void Persist(Guid aggregateId, object @event)
+        public async void Persist(TId aggregateId, object @event)
         {
             using (var conn = new NpgsqlConnection(_connectionString))
             {
                 conn.Open();
 
                 string insertCommandText = GetInsertCommandText(aggregateId, @event);
-                var command = new NpgsqlCommand(insertCommandText, conn);
-
-                try
+                using (var command = new NpgsqlCommand(insertCommandText, conn))
                 {
-                    int linesAffected = await command.ExecuteNonQueryAsync();
-                    Console.WriteLine("It was added {0} lines in table table1", linesAffected);
-                }
-                catch (Exception ex)
-                {
-                    throw;
-                }
-                finally
-                {
-                    conn.Close();
+                    try
+                    {
+                        int linesAffected = await command.ExecuteNonQueryAsync();
+                        Console.WriteLine("It was added {0} lines in table table1", linesAffected);
+                    }
+                    catch (Exception ex)
+                    {
+                        throw;
+                    }
+                    finally
+                    {
+                        conn.Close();
+                    }
                 }
             }
         }
@@ -90,7 +98,7 @@ namespace AcklenAvenue.EventSourcing.Postgres
             return new JsonEvent(type, json, dateTime);
         }
 
-        string GetInsertCommandText(Guid aggregateId, object @event)
+        string GetInsertCommandText(TId aggregateId, object @event)
         {
             string json = JsonConvert.SerializeObject(@event);
 

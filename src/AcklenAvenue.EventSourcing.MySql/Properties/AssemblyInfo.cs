@@ -6,11 +6,11 @@ using System.Runtime.InteropServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("AcklenAvenue.EventSourcing.MySql")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyDescription("MySQL Implementation for Event Sourcing.")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("")]
+[assembly: AssemblyCompany("Acklen Avenue")]
 [assembly: AssemblyProduct("AcklenAvenue.EventSourcing.MySql")]
-[assembly: AssemblyCopyright("Copyright ©  2015")]
+[assembly: AssemblyCopyright("Copyright © Acklen Avenue, LLC  2015")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

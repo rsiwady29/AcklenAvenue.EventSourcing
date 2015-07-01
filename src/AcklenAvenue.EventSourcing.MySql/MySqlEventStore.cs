@@ -98,5 +98,10 @@ namespace AcklenAvenue.EventSourcing.MySql
                 mySqlConnection.Close();
             }
         }
+
+        public void PersistInBach(IEnumerable<InBatchEvent<TId>> batchEvents)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

@@ -28,5 +28,15 @@ namespace AcklenAvenue.EventSourcing
         {
             Items.Add(new QueueItem<TId>(aggregateId, @event, DateTime.Now));
         }
+
+        public void PersistInBach(IEnumerable<InBatchEvent<TId>> batchEvents)
+        {
+            List<QueueItem<TId>> all =
+                batchEvents.AsParallel()
+                           .Select(@event => new QueueItem<TId>(@event.AggregateId, @event.Event, DateTime.Now))
+                           .ToList();
+
+            Items.AddRange(all);
+        }
     }
 }

@@ -1,20 +1,22 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Data;
 using System.Linq;
-using System.Reflection;
 using System.Threading.Tasks;
+
 using Newtonsoft.Json;
+
 using Npgsql;
 
 namespace AcklenAvenue.EventSourcing.Postgres
-{    
+{
     public class PostgresEventStore<TId> : IEventStore<TId>
     {
         readonly string _connectionString;
-        readonly string _tableName;
+
         readonly JsonEventConverter _jsonEventConverter;
+
+        readonly string _tableName;
 
         public PostgresEventStore(string connectionString, string tableName)
         {
@@ -30,12 +32,11 @@ namespace AcklenAvenue.EventSourcing.Postgres
                 List<object> list;
                 using (NpgsqlCommand command = connection.CreateCommand())
                 {
-                    var where = Equals(aggregateId, default(TId))
-                                    ? ""
-                                    : string.Format("WHERE \"aggregateId\" = '{0}'", aggregateId);
+                    string where = Equals(aggregateId, default(TId))
+                                       ? ""
+                                       : string.Format("WHERE \"aggregateId\" = '{0}'", aggregateId);
 
-                    command.CommandText = string.Format("SELECT * FROM \"{0}\" {1} ORDER BY date",
-                        _tableName, @where);
+                    command.CommandText = string.Format("SELECT * FROM \"{0}\" {1} ORDER BY date", _tableName, @where);
                     using (var adapter = new NpgsqlDataAdapter { SelectCommand = command })
                     {
                         await connection.OpenAsync();
@@ -48,20 +49,6 @@ namespace AcklenAvenue.EventSourcing.Postgres
 
                 return list;
             }
-        }
-
-        public List<object> ConvertDatasetToListOfEvents(NpgsqlDataAdapter adapter)
-        {
-            List<JsonEvent> jsonEvents;
-            using (var dataSet = new DataSet())
-            {
-                adapter.Fill(dataSet);
-
-                jsonEvents = dataSet.Tables[0].Rows.Cast<DataRow>().Select(GetJsonEvent).ToList();
-            }
-
-            List<object> list = jsonEvents.Select(_jsonEventConverter.GetEvent).ToList();
-            return list;
         }
 
         public async void Persist(TId aggregateId, object @event)
@@ -90,6 +77,58 @@ namespace AcklenAvenue.EventSourcing.Postgres
             }
         }
 
+        public void PersistInBach(IEnumerable<InBatchEvent<TId>> batchEvents)
+        {
+            using (var connection = new NpgsqlConnection(_connectionString))
+            {
+                connection.Open();
+                using (NpgsqlCommand command = connection.CreateCommand())
+                {
+                    command.CommandText = string.Format(
+                        "COPY \"{0}\" (\"aggregateId\", data, date, type) FROM STDIN;", _tableName);
+                    var serializer = new NpgsqlCopySerializer(connection);
+                    var copyIn = new NpgsqlCopyIn(command, connection, serializer.ToStream);
+                    try
+                    {
+                        copyIn.Start();
+
+                        foreach (var @event in batchEvents)
+                        {
+                            serializer.AddString(string.Format("{0}", @event.AggregateId));
+                            serializer.AddString(SerializeEvent(@event.Event));
+                            serializer.AddDateTime(DateTime.Now);
+                            serializer.AddString(@event.Event.GetType().FullName);
+                            serializer.EndRow();
+                            serializer.Flush();
+                        }
+
+                        copyIn.End();
+                        serializer.Close();
+                    }
+                    catch (Exception e)
+                    {
+                        copyIn.Cancel("Undo copy on exception.");
+
+                        throw e;
+                    }
+                }
+            }
+        }
+
+        public List<object> ConvertDatasetToListOfEvents(NpgsqlDataAdapter adapter)
+        {
+            List<JsonEvent> jsonEvents;
+            using (var dataSet = new DataSet())
+            {
+                adapter.Fill(dataSet);
+
+                jsonEvents = dataSet.Tables[0].Rows.Cast<DataRow>().Select(GetJsonEvent).ToList();
+            }
+
+            List<object> list = jsonEvents.Select(_jsonEventConverter.GetEvent).ToList();
+            return list;
+        }
+
         static JsonEvent GetJsonEvent(DataRow row)
         {
             DateTime dateTime = Convert.ToDateTime(row["date"]);
@@ -100,15 +139,32 @@ namespace AcklenAvenue.EventSourcing.Postgres
 
         string GetInsertCommandText(TId aggregateId, object @event)
         {
-            string json = JsonConvert.SerializeObject(@event);
+            string json = SerializeEvent(@event);
 
-            string dateTimeFormattedForMySql = String.Format("{0:yyyy-M-d HH:mm:ss}", DateTime.Now);
+            string dateTimeFormattedForMySql = DateTimeFormattedForMySql();
 
-            string insertCommandText = string.Format(
-                "INSERT INTO \"{4}\" (\"aggregateId\", data, date, type) VALUES ('{0}','{1}','{2}','{3}')",
-                aggregateId, json, dateTimeFormattedForMySql, @event.GetType().FullName, _tableName);
+            string insertCommandText =
+                string.Format(
+                    "INSERT INTO \"{4}\" (\"aggregateId\", data, date, type) VALUES ('{0}','{1}','{2}','{3}')",
+                    aggregateId,
+                    json,
+                    dateTimeFormattedForMySql,
+                    @event.GetType().FullName,
+                    _tableName);
 
             return insertCommandText;
+        }
+
+        static string DateTimeFormattedForMySql()
+        {
+            string dateTimeFormattedForMySql = String.Format("{0:yyyy-M-d HH:mm:ss}", DateTime.Now);
+            return dateTimeFormattedForMySql;
+        }
+
+        static string SerializeEvent(object @event)
+        {
+            string json = JsonConvert.SerializeObject(@event);
+            return json;
         }
     }
 }

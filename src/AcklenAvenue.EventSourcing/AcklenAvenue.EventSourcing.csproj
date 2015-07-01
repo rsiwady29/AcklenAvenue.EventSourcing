@@ -46,6 +46,7 @@
     <Compile Include="EventDeserializationException.cs" />
     <Compile Include="IEventStore.cs" />
     <Compile Include="IJsonEventConverter.cs" />
+    <Compile Include="InBatchEvent.cs" />
     <Compile Include="InMemoryEventStore.cs" />
     <Compile Include="JsonEvent.cs" />
     <Compile Include="JsonEventConverter.cs" />

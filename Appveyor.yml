@@ -10,7 +10,9 @@ nuget:
   account_feed: true
   disable_publish_on_pr: true
 before_build:
-- src\nuget restore
+  - cd src
+  - nuget restore
+  - cd ..
 build:
   publish_nuget: true
   verbosity: minimal

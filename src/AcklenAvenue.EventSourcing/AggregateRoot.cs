@@ -22,7 +22,7 @@ namespace AcklenAvenue.EventSourcing
 
             if (applyMethod == null) return;
 
-            applyMethod.Invoke(this, new object[] {domainEvent});
+            applyMethod.Invoke(this, new[] {domainEvent});
         }
 
         MethodInfo GetMethodForDomainEvent(object domainEvent)
@@ -31,18 +31,19 @@ namespace AcklenAvenue.EventSourcing
                 .GetMethods(BindingFlags.NonPublic | BindingFlags.Instance)
                 .Where(x => x.Name == "When");
 
-            MethodInfo applyMethod = methodInfos.FirstOrDefault(x =>
-                                                                {
-                                                                    ParameterInfo[] parameterInfos =
-                                                                        x.GetParameters();
+            MethodInfo applyMethod =
+                methodInfos.FirstOrDefault(x =>
+                                           {
+                                               ParameterInfo[] parameterInfos =
+                                                   x.GetParameters();
 
-                                                                    return parameterInfos.First().ParameterType ==
-                                                                           domainEvent.GetType();
-                                                                });
+                                               return parameterInfos.First().ParameterType ==
+                                                      domainEvent.GetType();
+                                           });
             return applyMethod;
         }
 
-        protected T NewEvent<T>(T @event) where T: class
+        protected T NewEvent<T>(T @event) where T : class
         {
             Changes.Add(@event);
             return @event;

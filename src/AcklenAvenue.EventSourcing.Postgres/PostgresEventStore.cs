@@ -3,26 +3,23 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
-
+using AcklenAvenue.EventSourcing.Serializer.JsonNet;
 using Newtonsoft.Json;
 
 using Npgsql;
 
 namespace AcklenAvenue.EventSourcing.Postgres
 {
-    public class PostgresEventStore<TId> : IEventStore<TId>
+    public abstract class PostgresEventStore<TId> : IEventStore<TId>
     {
         readonly string _connectionString;
 
-        readonly JsonEventConverter _jsonEventConverter;
-
         readonly string _tableName;
 
-        public PostgresEventStore(string connectionString, string tableName)
+        protected PostgresEventStore(string connectionString, string tableName)
         {
             _connectionString = connectionString;
-            _tableName = tableName;
-            _jsonEventConverter = new JsonEventConverter();
+            _tableName = tableName;            
         }
 
         public async Task<IEnumerable<object>> GetStream(TId aggregateId = default(TId))
@@ -51,7 +48,7 @@ namespace AcklenAvenue.EventSourcing.Postgres
             }
         }
 
-        public async void Persist(TId aggregateId, object @event)
+        public async Task Persist(TId aggregateId, object @event)
         {
             using (var conn = new NpgsqlConnection(_connectionString))
             {
@@ -77,42 +74,46 @@ namespace AcklenAvenue.EventSourcing.Postgres
             }
         }
 
-        public void PersistInBach(IEnumerable<InBatchEvent<TId>> batchEvents)
+        public async Task PersistInBatch(IEnumerable<InBatchEvent<TId>> batchEvents)
         {
-            using (var connection = new NpgsqlConnection(_connectionString))
-            {
-                connection.Open();
-                using (NpgsqlCommand command = connection.CreateCommand())
-                {
-                    command.CommandText = string.Format(
-                        "COPY \"{0}\" (\"aggregateId\", data, date, type) FROM STDIN;", _tableName);
-                    var serializer = new NpgsqlCopySerializer(connection);
-                    var copyIn = new NpgsqlCopyIn(command, connection, serializer.ToStream);
-                    try
-                    {
-                        copyIn.Start();
+            await Task.Factory
+                .StartNew(() =>
+                          {
+                              using (var connection = new NpgsqlConnection(_connectionString))
+                              {
+                                  connection.Open();
+                                  using (NpgsqlCommand command = connection.CreateCommand())
+                                  {
+                                      command.CommandText = string.Format(
+                                          "COPY \"{0}\" (\"aggregateId\", data, date, type) FROM STDIN;", _tableName);
+                                      var serializer = new NpgsqlCopySerializer(connection);
+                                      var copyIn = new NpgsqlCopyIn(command, connection, serializer.ToStream);
+                                      try
+                                      {
+                                          copyIn.Start();
 
-                        foreach (var @event in batchEvents)
-                        {
-                            serializer.AddString(string.Format("{0}", @event.AggregateId));
-                            serializer.AddString(SerializeEvent(@event.Event));
-                            serializer.AddDateTime(DateTime.Now);
-                            serializer.AddString(@event.Event.GetType().FullName);
-                            serializer.EndRow();
-                            serializer.Flush();
-                        }
+                                          foreach (var @event in batchEvents)
+                                          {
+                                              serializer.AddString(string.Format("{0}", @event.AggregateId));
+                                              serializer.AddString(SerializeEvent(@event.Event));
+                                              serializer.AddDateTime(DateTime.Now);
+                                              serializer.AddString(@event.Event.GetType().FullName);
+                                              serializer.EndRow();
+                                              serializer.Flush();
+                                          }
 
-                        copyIn.End();
-                        serializer.Close();
-                    }
-                    catch (Exception e)
-                    {
-                        copyIn.Cancel("Undo copy on exception.");
+                                          copyIn.End();
+                                          serializer.Close();
+                                      }
+                                      catch (Exception e)
+                                      {
+                                          copyIn.Cancel("Undo copy on exception.");
 
-                        throw e;
-                    }
-                }
-            }
+                                          throw e;
+                                      }
+                                  }
+                              }
+                          });
         }
 
         public List<object> ConvertDatasetToListOfEvents(NpgsqlDataAdapter adapter)
@@ -125,9 +126,11 @@ namespace AcklenAvenue.EventSourcing.Postgres
                 jsonEvents = dataSet.Tables[0].Rows.Cast<DataRow>().Select(GetJsonEvent).ToList();
             }
 
-            List<object> list = jsonEvents.Select(_jsonEventConverter.GetEvent).ToList();
+            List<object> list = jsonEvents.Select(DeserializeEvent).ToList();
             return list;
         }
+
+        public abstract object DeserializeEvent(JsonEvent eventJson);
 
         static JsonEvent GetJsonEvent(DataRow row)
         {

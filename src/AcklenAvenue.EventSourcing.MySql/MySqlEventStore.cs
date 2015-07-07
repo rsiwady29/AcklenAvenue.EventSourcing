@@ -5,6 +5,7 @@ using System.Data;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using AcklenAvenue.EventSourcing.Serializer.JsonNet;
 using MySql.Data.MySqlClient;
 using Newtonsoft.Json;
 
@@ -78,7 +79,7 @@ namespace AcklenAvenue.EventSourcing.MySql
             }
         }
 
-        public async void Persist(TId aggregateId, object @event)
+        public async Task Persist(TId aggregateId, object @event)
         {
             using (var mySqlConnection = new MySqlConnection(_connectionString))
             {
@@ -99,7 +100,7 @@ namespace AcklenAvenue.EventSourcing.MySql
             }
         }
 
-        public void PersistInBach(IEnumerable<InBatchEvent<TId>> batchEvents)
+        public Task PersistInBatch(IEnumerable<InBatchEvent<TId>> batchEvents)
         {
             throw new NotImplementedException();
         }

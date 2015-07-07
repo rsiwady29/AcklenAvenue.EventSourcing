@@ -2,9 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-
+using AcklenAvenue.EventSourcing.Serializer.JsonNet;
 using FluentAssertions;
-
 using Machine.Specifications;
 
 namespace AcklenAvenue.EventSourcing.Postgres.Specs.Integration
@@ -19,17 +18,16 @@ namespace AcklenAvenue.EventSourcing.Postgres.Specs.Integration
 
         static TestAggregate _aggregate;
 
-        Establish context = () =>
+        Establish context =
+            () =>
             {
-                _eventStore =
-                    new PostgresEventStore<Guid>(
-                        "Server=127.0.0.1;Port=5432;User Id=root;Password=root;Database=Identity;", "aggregateEvents");
+                _eventStore = new TestPostgresEventStore();
 
                 _id = Guid.NewGuid();
                 _aggregate = new TestAggregate(_id, "test", new Gender("male"));
                 _eventStore.Persist(_id, _aggregate.Changes.First());
 
-                JsonEventConverter.CustomConversions.Add(typeof(Gender), o => new Gender(o.ToString()));
+                JsonEventConverter.CustomConversions.Add(typeof (Gender), o => new Gender(o.ToString()));
             };
 
         Because of = () => _result = _eventStore.GetStream(_id);

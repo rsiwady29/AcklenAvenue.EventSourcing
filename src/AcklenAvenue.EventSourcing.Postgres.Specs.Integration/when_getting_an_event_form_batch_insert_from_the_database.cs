@@ -2,9 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-
 using FluentAssertions;
-
 using Machine.Specifications;
 
 namespace AcklenAvenue.EventSourcing.Postgres.Specs.Integration
@@ -17,11 +15,10 @@ namespace AcklenAvenue.EventSourcing.Postgres.Specs.Integration
 
         static Task<IEnumerable<object>> _result;
 
-        Establish context = () =>
+        Establish context =
+            () =>
             {
-                _eventStore =
-                    new PostgresEventStore<Guid>(
-                        "Server=127.0.0.1;Port=5432;User Id=root;Password=root;Database=Identity;", "aggregateEvents");
+                _eventStore = new TestPostgresEventStore();
 
                 _id = Guid.NewGuid();
 
@@ -30,9 +27,13 @@ namespace AcklenAvenue.EventSourcing.Postgres.Specs.Integration
                 for (int i = 0; i < 10000; i++)
                 {
                     var aggregate = new TestAggregate(_id, "test", new Gender("female"));
-                    inBatchEvents.Add(new InBatchEvent<Guid> { AggregateId = _id, Event = aggregate.Changes.First() });
+                    inBatchEvents.Add(new InBatchEvent<Guid>
+                                      {
+                                          AggregateId = _id,
+                                          Event = aggregate.Changes.First()
+                                      });
                 }
-                _eventStore.PersistInBach(inBatchEvents);
+                _eventStore.PersistInBatch(inBatchEvents);
             };
 
         Because of = () => _result = _eventStore.GetStream(_id);

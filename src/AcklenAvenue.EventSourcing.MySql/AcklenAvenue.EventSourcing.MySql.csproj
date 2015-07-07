@@ -50,6 +50,10 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\AcklenAvenue.EventSourcing.Serializer.JsonNet\AcklenAvenue.EventSourcing.Serializer.JsonNet.csproj">
+      <Project>{98F157AD-2410-4267-BEAF-E57DD7AD3730}</Project>
+      <Name>AcklenAvenue.EventSourcing.Serializer.JsonNet</Name>
+    </ProjectReference>
     <ProjectReference Include="..\AcklenAvenue.EventSourcing\AcklenAvenue.EventSourcing.csproj">
       <Project>{50A5BC14-FA76-4C00-80F9-5BF847B9C766}</Project>
       <Name>AcklenAvenue.EventSourcing</Name>

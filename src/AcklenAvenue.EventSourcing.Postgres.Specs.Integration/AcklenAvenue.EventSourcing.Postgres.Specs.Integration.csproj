@@ -47,6 +47,10 @@
       <HintPath>..\..\lib\Machine.Specifications.Should.0.7.2\lib\net45\Machine.Specifications.Should.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="Newtonsoft.Json, Version=7.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\lib\Newtonsoft.Json.7.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -60,6 +64,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TestAggregate.cs" />
     <Compile Include="TestAggregateCreated.cs" />
+    <Compile Include="TestPostgresEventStore.cs" />
     <Compile Include="when_getting_an_event_form_batch_insert_from_the_database.cs" />
     <Compile Include="when_getting_an_event_stream_from_the_database.cs" />
     <Compile Include="when_getting_an_event_stream_from_the_database_with_custom_conversions.cs" />
@@ -71,6 +76,10 @@
     <ProjectReference Include="..\AcklenAvenue.EventSourcing.Postgres\AcklenAvenue.EventSourcing.Postgres.csproj">
       <Project>{5B0AA5BD-EDAB-4EDB-9B77-5D1339B07319}</Project>
       <Name>AcklenAvenue.EventSourcing.Postgres</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\AcklenAvenue.EventSourcing.Serializer.JsonNet\AcklenAvenue.EventSourcing.Serializer.JsonNet.csproj">
+      <Project>{98F157AD-2410-4267-BEAF-E57DD7AD3730}</Project>
+      <Name>AcklenAvenue.EventSourcing.Serializer.JsonNet</Name>
     </ProjectReference>
     <ProjectReference Include="..\AcklenAvenue.EventSourcing\AcklenAvenue.EventSourcing.csproj">
       <Project>{50A5BC14-FA76-4C00-80F9-5BF847B9C766}</Project>

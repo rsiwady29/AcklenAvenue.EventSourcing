@@ -9,6 +9,8 @@ assembly_info:
 nuget:
   account_feed: true
   disable_publish_on_pr: true
+before_build:
+  src/nuget restore
 build:
   publish_nuget: true
   verbosity: minimal

@@ -54,7 +54,33 @@ namespace AcklenAvenue.EventSourcing.Postgres
             {
                 conn.Open();
 
-                string insertCommandText = GetInsertCommandText(aggregateId, @event);
+                string insertCommandText = GetInsertCommandText(DateTime.Now, aggregateId, @event);
+                using (var command = new NpgsqlCommand(insertCommandText, conn))
+                {
+                    try
+                    {
+                        int linesAffected = await command.ExecuteNonQueryAsync();
+                        Console.WriteLine("It was added {0} lines in table table1", linesAffected);
+                    }
+                    catch (Exception ex)
+                    {
+                        throw;
+                    }
+                    finally
+                    {
+                        conn.Close();
+                    }
+                }
+            }
+        }
+
+        public async Task Persist(DateTime datetimestamp, TId aggregateId, object @event)
+        {
+            using (var conn = new NpgsqlConnection(_connectionString))
+            {
+                conn.Open();
+
+                string insertCommandText = GetInsertCommandText(datetimestamp, aggregateId, @event);
                 using (var command = new NpgsqlCommand(insertCommandText, conn))
                 {
                     try
@@ -116,6 +142,48 @@ namespace AcklenAvenue.EventSourcing.Postgres
                           });
         }
 
+        public async Task PersistInBatch(DateTime datetimestamp, IEnumerable<InBatchEvent<TId>> batchEvents)
+        {
+            await Task.Factory
+                .StartNew(() =>
+                {
+                    using (var connection = new NpgsqlConnection(_connectionString))
+                    {
+                        connection.Open();
+                        using (NpgsqlCommand command = connection.CreateCommand())
+                        {
+                            command.CommandText = string.Format(
+                                "COPY \"{0}\" (\"aggregateId\", data, date, type) FROM STDIN;", _tableName);
+                            var serializer = new NpgsqlCopySerializer(connection);
+                            var copyIn = new NpgsqlCopyIn(command, connection, serializer.ToStream);
+                            try
+                            {
+                                copyIn.Start();
+
+                                foreach (var @event in batchEvents)
+                                {
+                                    serializer.AddString(string.Format("{0}", @event.AggregateId));
+                                    serializer.AddString(SerializeEvent(@event.Event));
+                                    serializer.AddDateTime(datetimestamp);
+                                    serializer.AddString(@event.Event.GetType().FullName);
+                                    serializer.EndRow();
+                                    serializer.Flush();
+                                }
+
+                                copyIn.End();
+                                serializer.Close();
+                            }
+                            catch (Exception e)
+                            {
+                                copyIn.Cancel("Undo copy on exception.");
+
+                                throw e;
+                            }
+                        }
+                    }
+                });
+        }
+
         public List<object> ConvertDatasetToListOfEvents(NpgsqlDataAdapter adapter)
         {
             List<JsonEvent> jsonEvents;
@@ -140,11 +208,11 @@ namespace AcklenAvenue.EventSourcing.Postgres
             return new JsonEvent(type, json, dateTime);
         }
 
-        string GetInsertCommandText(TId aggregateId, object @event)
+        string GetInsertCommandText(DateTime datetimeStamp, TId aggregateId, object @event)
         {
             string json = SerializeEvent(@event);
 
-            string dateTimeFormattedForMySql = DateTimeFormattedForMySql();
+            string dateTimeFormattedForMySql = DateTimeFormattedForMySql(datetimeStamp);
 
             string insertCommandText =
                 string.Format(
@@ -158,9 +226,9 @@ namespace AcklenAvenue.EventSourcing.Postgres
             return insertCommandText;
         }
 
-        static string DateTimeFormattedForMySql()
+        static string DateTimeFormattedForMySql(DateTime datetimeStamp)
         {
-            string dateTimeFormattedForMySql = String.Format("{0:yyyy-M-d HH:mm:ss}", DateTime.Now);
+            string dateTimeFormattedForMySql = String.Format("{0:yyyy-M-d HH:mm:ss}", datetimeStamp);
             return dateTimeFormattedForMySql;
         }
 

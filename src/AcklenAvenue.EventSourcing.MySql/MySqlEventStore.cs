@@ -100,7 +100,33 @@ namespace AcklenAvenue.EventSourcing.MySql
             }
         }
 
+        public async Task Persist(DateTime datetimestamp, TId aggregateId, object @event)
+        {
+            using (var mySqlConnection = new MySqlConnection(_connectionString))
+            {
+                MySqlCommand command = mySqlConnection.CreateCommand();
+
+                string json = JsonConvert.SerializeObject(@event);
+
+                string dateTimeFormattedForMySql = String.Format("{0:yyyy-M-d HH:mm:ss}", datetimestamp);
+
+                command.CommandText =
+                    string.Format(
+                        "INSERT INTO {4} (Id, Event, Time, Type) VALUES ('{0}','{1}','{2}','{3}')",
+                        aggregateId, json, dateTimeFormattedForMySql, @event.GetType().FullName, _tableName);
+
+                mySqlConnection.Open();
+                await command.ExecuteNonQueryAsync();
+                mySqlConnection.Close();
+            }
+        }
+
         public Task PersistInBatch(IEnumerable<InBatchEvent<TId>> batchEvents)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task PersistInBatch(DateTime datetimestamp, IEnumerable<InBatchEvent<TId>> batchEvents)
         {
             throw new NotImplementedException();
         }

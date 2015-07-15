@@ -29,6 +29,11 @@ namespace AcklenAvenue.EventSourcing
             await Task.Factory.StartNew(() => Items.Add(new QueueItem<TId>(aggregateId, @event, DateTime.Now)));
         }
 
+        public async Task Persist(DateTime datetimestamp, TId aggregateId, object @event)
+        {
+            await Task.Factory.StartNew(() => Items.Add(new QueueItem<TId>(aggregateId, @event, datetimestamp)));
+        }
+
         public async Task PersistInBatch(IEnumerable<InBatchEvent<TId>> batchEvents)
         {
             await Task.Factory.StartNew(() =>
@@ -43,6 +48,22 @@ namespace AcklenAvenue.EventSourcing
 
                                             Items.AddRange(all);
                                         });
+        }
+
+        public async Task PersistInBatch(DateTime datetimestamp, IEnumerable<InBatchEvent<TId>> batchEvents)
+        {
+            await Task.Factory.StartNew(() =>
+            {
+                List<QueueItem<TId>> all =
+                    batchEvents.AsParallel()
+                        .Select(
+                            @event =>
+                                new QueueItem<TId>(@event.AggregateId, @event.Event,
+                                    datetimestamp))
+                        .ToList();
+
+                Items.AddRange(all);
+            });
         }
     }
 }
